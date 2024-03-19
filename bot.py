@@ -5,12 +5,12 @@ from nextcord.ext import tasks
 from munich_KVR_bot import kvr_bot
 
 load_dotenv()
-DISCORD_TOKEN = os.getenv("KVR_TOKEN")
-channel_id = 1163565602145841175  # This should be the ID of the channel where you want to send messages
+DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
+CHANNEL_ID = int(os.getenv("CHANNEL_ID"))
 
-intents = nextcord.Intents.default()
+intents = nextcord.Intents.all()
 intents.members = True
-bot = nextcord.Client(intents=nextcord.Intents.all())
+bot = nextcord.Client(intents=intents)
 
 @bot.event
 async def on_ready():
@@ -37,16 +37,16 @@ def format_appointments(appointments):
 @tasks.loop(minutes=5)
 async def check_appointments():
     """Checks for appointments and sends an embed with the details to the Discord channel."""
-    channel = bot.get_channel(channel_id)
+    channel = bot.get_channel(CHANNEL_ID)
     if not channel:
-        print(f"Channel {channel_id} not found.")
+        print(f"Channel {CHANNEL_ID} not found.")
         return
 
     try:
         # Get data from the website
         date_list_df, appointments = kvr_bot()
 
-        # If kvr_bot returns a DataFrame, we convert the relevant column to a list
+        # If abh_bot returns a DataFrame, we convert the relevant column to a list
         date_list = date_list_df['date'].tolist() if not date_list_df.empty else []
 
         date_interval = get_date_interval(date_list)
@@ -60,6 +60,8 @@ async def check_appointments():
         if appointments:
             appointments_str = format_appointments(appointments)
             embed.add_field(name="Available Appointments", value=appointments_str, inline=False)
+            # link to website
+            embed.add_field(name="Book Here", value=os.getenv("BASE_URL"), inline=False)
             embed.set_footer(text="Hurry up and book your appointment!")
             message_content = "@everyone\n"  # This will mention everyone in the message
         else:
